@@ -22,5 +22,11 @@
         "password": "admin",
         "name": "Admin",
         "isAdmin": true
+    },
+    "USR": {
+        "username": "user",
+        "password": "user",
+        "name": "User",
+        "isAdmin": false
     }
 }

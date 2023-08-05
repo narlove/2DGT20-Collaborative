@@ -6,6 +6,7 @@ import customtkinter as customTkinter
 import json
 
 from admin_menu import build_admin_menu
+from teacher_menu import TeacherAbsenceTracker
 
 window1 = customTkinter.CTk()
 window1.protocol("WM_DELETE_WINDOW", lambda: quit())
@@ -51,10 +52,10 @@ def submit_functionality(event = None):
             if fullProfile['isAdmin'] == True:
                 build_admin_menu(window1)
             else:
-                print('not working yet')
-                quit()
+                teacherMenu = TeacherAbsenceTracker(rootWindow=window1)
+                teacherMenu.run()
 
-            window1.withdraw()
+        window1.withdraw()
 
         if foundUser == False or foundPass == False:
             messagebox.showerror('An error occured', 'Ensure the password and username match.')
