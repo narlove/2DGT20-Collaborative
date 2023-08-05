@@ -1,5 +1,3 @@
-from copy import copy
-
 # takes in a dictionary where each person has a key (their code) 
 # & an integer assigned to them (the number of reliefs they've taken this semester)
 
@@ -20,8 +18,14 @@ def sort(toSort: dict[str, int]):
         array[j + 1] = key
 
     # work on zipping it back together, returning it and then this should work properly
-    unusedNames = list(toSort.keys())
-    for name in unusedNames:
-        needValue = toSort[name]
+    returnDict = {}
 
-    return array
+    unusedNames = list(toSort.keys())
+    for value in array:
+        for name in unusedNames:
+            if toSort[name] == value:
+                returnDict[name] = value
+                unusedNames.remove(name)
+                break
+
+    return returnDict
