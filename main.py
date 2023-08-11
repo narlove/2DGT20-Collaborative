@@ -4,17 +4,33 @@ from tkinter import messagebox
 import customtkinter as customTkinter
 
 import json
+import os
 
 from admin_menu import build_admin_menu
 from teacher_menu import TeacherAbsenceTracker
+
+file_dir = os.path.dirname(os.path.abspath(__file__))
+desktop_path = os.path.join(file_dir, "Desktop.png")
+users_path = os.path.join(file_dir, "users.json")
 
 window1 = customTkinter.CTk()
 window1.protocol("WM_DELETE_WINDOW", lambda: quit())
 
 # need the image
-#background_image = tk.PhotoImage(file = 'Desktop.png')
-#graphicL = tk.Label(window1, image = background_image)
-#graphicL.pack()
+background_image = tk.PhotoImage(file = desktop_path)
+graphicL = tk.Label(window1, image = background_image)
+graphicL.pack()
+
+#converts user sign up data into the users.json file
+Window2=tk.Toplevel(window1)
+graphicZ=tk.Label(Window2,image=background_image)
+graphicZ.pack()
+Window2.geometry('800x580')
+Window2.resizable(width=False, height=False)
+entry_password = customTkinter.CTkEntry(Window2, bg_color = '#F9F4F5', placeholder_text = "Password", show = '*')
+entry_password.place(x = 330, y = 380)
+entry_name = customTkinter.CTkEntry(Window2, bg_color = '#F9F4F5', placeholder_text = "Username")
+entry_name.place(x = 330, y = 340)
 
 #creates the Width Variable in proportion of the users screen
 width = window1.winfo_screenwidth()
@@ -38,7 +54,7 @@ def submit_functionality(event = None):
     foundUser = False
     foundPass = False
 
-    with open('users.json', 'r') as f:
+    with open(users_path, 'r') as f:
         data = json.load(f)
         for profile in data:
             if username != data[profile]["username"]: continue
@@ -55,10 +71,12 @@ def submit_functionality(event = None):
                 teacherMenu = TeacherAbsenceTracker(rootWindow=window1)
                 teacherMenu.run()
 
-        window1.withdraw()
 
         if foundUser == False or foundPass == False:
             messagebox.showerror('An error occured', 'Ensure the password and username match.')
+
+        if foundUser == True and foundPass == True:
+            window1.withdraw()
 
 #creates window 
 window1.geometry('800x580')
@@ -74,7 +92,13 @@ entry_password.place(x = 330, y = 420)
 entry_name = customTkinter.CTkEntry(window1, bg_color = '#F9F4F5', placeholder_text = "Username")
 entry_name.place(x = 330, y = 390)
 
-button_enter = customTkinter.CTkButton(window1,bg_color = '#F9F4F5',fg_color = '#680067', hover_color = '#b142c1', height = 29, width = 50, text = "Enter", command = submit_functionality)
+sign_up=customTkinter.CTkButton(window1,bg_color='#F9F4F5', fg_color='#680067', hover_color = '#b142c1',height = 29, width = 50, text="Sign Up")
+sign_up.place(x=370,y=480)
+
+button_enter = customTkinter.CTkButton(window1,bg_color = '#F9F4F5',fg_color = '#680067', hover_color = '#b142c1', height = 29, width = 50, text ="Sign In",font=customTkinter.CTkFont("arial"),command = submit_functionality)
+
 button_enter.place(x = 470, y = 420)
+
+window1.bind('<Return>',submit_functionality)
 
 window1.mainloop()

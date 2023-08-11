@@ -3,6 +3,8 @@ from tkinter import ttk
 from tkinter import messagebox
 import customtkinter as customTkinter
 
+from PIL import ImageTk, Image
+
 from datetime import date
 from copy import copy
 
@@ -13,6 +15,10 @@ import json
 
 import sorting_algorithm
 
+file_dir = os.path.dirname(os.path.abspath(__file__))
+absencedata_path = os.path.join(file_dir, "absencedata.csv")
+teacherlist_path = os.path.join(file_dir, "teacherlist.csv")
+desktop_path = os.path.join(file_dir, "Desktopgif.gif")
 # <FUNCTIONS>
 
 
@@ -39,8 +45,8 @@ def edit_file(
                 raise TypeError(
                     "The correct treeview variable needs to be provided for the file to be edited correctly."
                 )
-            with open(f"temp{key}", "w", newline="") as csvfile:
-                writer = csv.writer(csvfile, delimiter=",")
+            with open(os.path.join(file_dir, f'temp{key}'), 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile, delimiter=',')
 
                 for row in treeVar.get_children():
                     tempRow = treeVar.item(row)
@@ -53,9 +59,8 @@ def edit_file(
                     writer.writerow(toWrite)
 
             basePath = os.getcwd()
-            os.remove(basePath + f"/{key}")
-            os.rename(basePath + f"/temp{key}", basePath + f"/{key}")
-
+            os.remove(file_dir + f'\\{key}')
+            os.rename(file_dir + f'\\temp{key}', file_dir + f'\\{key}')
 
 # reader needs to be a csv reader passed in
 def sort_teachers_by_reliefs_EDIT(reader: list[list], teachersTree: ttk.Treeview):
@@ -81,7 +86,7 @@ def sort_teachers_by_reliefs_EDIT(reader: list[list], teachersTree: ttk.Treeview
 
 
 def delete_labels():
-    for label in main_area.winfo_children():
+    for label in root.winfo_children():
         if type(label) == ttk.Label or type(label) == tk.Frame:
             label.destroy()
 
@@ -94,6 +99,7 @@ def go_back_to_login():
 
 # Create Function into buttons from the main area
 def show_entry(entry_text):
+
     for label in main_area.winfo_children():
         if type(label) == ttk.Label or type(label) == tk.Frame:
             label.destroy()
@@ -115,6 +121,7 @@ def Home():
 # function to draw up the treeview that should exist in the manage staff section
 def build_manage_staff():
     # need this to ensure the vbar gets put side by side, cause the current widget is already managed by pack
+
     for label in main_area.winfo_children():
         if type(label) == ttk.Label or type(label) == tk.Frame:
             label.destroy()
@@ -155,8 +162,8 @@ def build_manage_staff():
         absencesTree.delete(item)
 
     # read data from the csv (yes, same code - needs to be in a function, in an optimised world)
-    with open("absencedata.csv", "r", newline="") as csvfile:
-        reader = csv.reader(csvfile, delimiter=",")
+    with open(absencedata_path, 'r', newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',')
         count = 0
         for row in reader:
             count += 1
@@ -199,8 +206,8 @@ def build_manage_staff():
             teachersTree.delete(item)
 
         # read data from the csv (yes, same code - needs to be in a function, in an optimised world)
-        with open("teacherlist.csv", "r", newline="") as csvfile:
-            reader = csv.reader(csvfile, delimiter=",")
+        with open(teacherlist_path, 'r', newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',')
             argument = [row for row in reader]
 
         sort_teachers_by_reliefs_EDIT(reader=argument, teachersTree=teachersTree)
@@ -329,6 +336,7 @@ def build_admin_menu(rootWindow=tk.Tk):
     view_records_button.grid(row=150, column=1, ipady=10, ipadx=10)
 
     # Create a frame for the main area
+    
     global main_area
 
     main_area = tk.Frame(root, bg="purple")
