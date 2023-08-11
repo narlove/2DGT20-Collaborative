@@ -50,12 +50,13 @@ def submit_functionality(event = None):
     if username == '' or password == '':
         messagebox.showwarning('An error occured', 'Ensure you enter both a username and a password.')
         return
-    
-    foundUser = False
-    foundPass = False
 
     with open(users_path, 'r') as f:
         data = json.load(f)
+
+        foundUser = False
+        foundPass = False
+
         for profile in data:
             if username != data[profile]["username"]: continue
             foundUser = True
@@ -67,10 +68,13 @@ def submit_functionality(event = None):
 
             if fullProfile['isAdmin'] == True:
                 build_admin_menu(window1)
+                window1.withdraw()
             else:
                 teacherMenu = TeacherAbsenceTracker(rootWindow=window1)
-                teacherMenu.run()
+                teacherMenu.run()   
 
+                window1.withdraw()
+                teacherMenu.window.deiconify()            
 
         if foundUser == False or foundPass == False:
             messagebox.showerror('An error occured', 'Ensure the password and username match.')
@@ -98,6 +102,11 @@ sign_up.place(x=370,y=480)
 button_enter = customTkinter.CTkButton(window1,bg_color = '#F9F4F5',fg_color = '#680067', hover_color = '#b142c1', height = 29, width = 50, text ="Sign In",font=customTkinter.CTkFont("arial"),command = submit_functionality)
 
 button_enter.place(x = 470, y = 420)
+
+if not os.path.exists(users_path):
+    messagebox.showwarning('An error may have occured', 'There have been no profiles previously established. If you believe this to be an error, please ensure your users.json file is intact and in the same directory as the root file (main.py)')
+    with open(users_path, 'a') as f:
+        pass
 
 window1.bind('<Return>',submit_functionality)
 

@@ -184,3 +184,12 @@ class TeacherAbsenceTracker:
 
         submit_button = tk.Button(button_frame, text="Submit", command=self.submit_absence)
         submit_button.pack(side=tk.LEFT, padx=5)
+
+if __name__ == '__main__':
+    root = tk.Tk()
+    newInstance = TeacherAbsenceTracker(root)
+    newInstance.run()
+
+    root.withdraw()
+
+    root.mainloop()

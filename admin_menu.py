@@ -18,7 +18,14 @@ import sorting_algorithm
 file_dir = os.path.dirname(os.path.abspath(__file__))
 absencedata_path = os.path.join(file_dir, "absencedata.csv")
 teacherlist_path = os.path.join(file_dir, "teacherlist.csv")
-desktop_path = os.path.join(file_dir, "Desktopgif.gif")
+
+desktop_path = os.path.join(file_dir, "Desktop.png")
+
+with open(absencedata_path, 'a') as f, open(teacherlist_path, 'a') as g:
+    # just to create the files if they dont exist
+    pass
+
+
 # <FUNCTIONS>
 
 
@@ -58,7 +65,6 @@ def edit_file(
                         toWrite.append(value)
                     writer.writerow(toWrite)
 
-            basePath = os.getcwd()
             os.remove(file_dir + f'\\{key}')
             os.rename(file_dir + f'\\temp{key}', file_dir + f'\\{key}')
 
@@ -183,6 +189,11 @@ def build_manage_staff():
         topLevel.title("Select a substitute")
 
         selected = absencesTree.focus()
+
+        if selected == '' or selected == None:
+            topLevel.destroy()
+            return
+
         item = absencesTree.item(selected)
 
         teachersTree = ttk.Treeview(
@@ -212,17 +223,20 @@ def build_manage_staff():
 
         sort_teachers_by_reliefs_EDIT(reader=argument, teachersTree=teachersTree)
 
-        # count = 0
-        # for row in reader:
-        #     count += 1
-        #     teachersTree.insert('', tk.END, text="item"+str(count), values=[row[0], row[1]])
-
         def select_sub(event=None):
             selectedTeacher = teachersTree.focus()
             teacherItem = teachersTree.item(selectedTeacher)
 
-            if item["values"][5] != "n/a":
-                subTeacherCode = item["values"][5]
+            if selectedTeacher == '' or selectedTeacher == None:
+                return
+
+            if item['values'][5] != 'n/a':
+                subTeacherCode = item['values'][5]
+
+                if subTeacherCode != 'n/a':
+                    askOkBool = messagebox.askokcancel('Are you sure you want to do this?', 'You are current attempting to override the substitute previously assigned to this teacher. Are you sure you want to do this?')
+                    if askOkBool == False:
+                        return
 
                 # on absences tree, check for which teacher has this code
                 for teacherTreeItem in teachersTree.get_children():
