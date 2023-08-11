@@ -3,6 +3,8 @@ from tkinter import ttk
 from tkinter import messagebox
 import customtkinter as customTkinter
 
+from PIL import ImageTk, Image
+
 from datetime import date
 from copy import copy
 
@@ -13,6 +15,10 @@ import json
 
 import sorting_algorithm
 
+file_dir = os.path.dirname(os.path.abspath(__file__))
+absencedata_path = os.path.join(file_dir, "absencedata.csv")
+teacherlist_path = os.path.join(file_dir, "teacherlist.csv")
+desktop_path = os.path.join(file_dir, "Desktopgif.gif")
 # <FUNCTIONS>
 
 def edit_file(options: dict[str, bool] = {'teacherlist.csv': False, 'absencedata.csv': False}, teacherTree: ttk.Treeview = None, absenceTree: ttk.Treeview = None):
@@ -31,7 +37,7 @@ def edit_file(options: dict[str, bool] = {'teacherlist.csv': False, 'absencedata
         if value == True:
             treeVar = teacherTree if key == 'teacherlist.csv' else absenceTree
             if treeVar == None: raise TypeError('The correct treeview variable needs to be provided for the file to be edited correctly.')
-            with open(f'temp{key}', 'w', newline='') as csvfile:
+            with open(os.path.join(file_dir, f'temp{key}'), 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile, delimiter=',')
 
                 for row in treeVar.get_children():
@@ -45,8 +51,8 @@ def edit_file(options: dict[str, bool] = {'teacherlist.csv': False, 'absencedata
                     writer.writerow(toWrite)
 
             basePath = os.getcwd()
-            os.remove(basePath + f'/{key}')
-            os.rename(basePath + f'/temp{key}', basePath + f'/{key}')
+            os.remove(file_dir + f'\\{key}')
+            os.rename(file_dir + f'\\temp{key}', file_dir + f'\\{key}')
 
 # reader needs to be a csv reader passed in
 def sort_teachers_by_reliefs_EDIT(reader: list[list], teachersTree: ttk.Treeview):
@@ -71,19 +77,19 @@ def sort_teachers_by_reliefs_EDIT(reader: list[list], teachersTree: ttk.Treeview
     edit_file({ 'teacherlist.csv': True }, teacherTree=teachersTree)
 
 def delete_labels():
-    for label in main_area.winfo_children():
+    for label in root.winfo_children():
         if type(label) == ttk.Label or type(label) == tk.Frame:
             label.destroy()
 
 # Create Function into buttons from the main area
 def show_entry(entry_text):
-    label = ttk.Label(main_area, text=entry_text)
+    label = ttk.Label(root, text=entry_text)
     label.pack()
 
 # function to draw up the treeview that should exist in the manage staff section
 def build_manage_staff():
     # need this to ensure the vbar gets put side by side, cause the current widget is already managed by pack
-    treeviewGridDiv = tk.Frame(main_area)
+    treeviewGridDiv = tk.Frame(root)
     treeviewGridDiv.pack()
 
     absencesTree = ttk.Treeview(
@@ -118,7 +124,7 @@ def build_manage_staff():
         absencesTree.delete(item)
 
     # read data from the csv (yes, same code - needs to be in a function, in an optimised world)
-    with open('absencedata.csv', 'r', newline='') as csvfile:
+    with open(absencedata_path, 'r', newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
         count = 0
         for row in reader:
@@ -160,7 +166,7 @@ def build_manage_staff():
             teachersTree.delete(item)
 
         # read data from the csv (yes, same code - needs to be in a function, in an optimised world)
-        with open('teacherlist.csv', 'r', newline='') as csvfile:
+        with open(teacherlist_path, 'r', newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',')
             argument = [row for row in reader]
         
@@ -246,13 +252,12 @@ def build_admin_menu(rootWindow = tk.Tk):
     view_records_button.grid(row=150, column=1, ipady=10, ipadx=10)
 
     # Create a frame for the main area
-    global main_area
-
-    main_area = tk.Frame(root, bg='white')
-    main_area.pack(expand=True, fill='both', side='right')
-
-    Home_Label=ttk.Label(main_area, text= "Home" )
+    Home_Label=ttk.Label(root, text= "Home" )
+    background_image = tk.PhotoImage(Image.open(desktop_path))
+    graphicL = tk.Label(root, image = background_image)
+    graphicL.pack()
+   
 
     # Create button to clear all labels
-    clear_button = ttk.Button(main_area, text="Clear Labels", command=delete_labels)
+    clear_button = ttk.Button(root, text="Clear Labels", command=delete_labels)
     clear_button.pack()

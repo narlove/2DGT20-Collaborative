@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
 import os
-from tkcalendar import DateEntry
+import tkcalendar 
 
 # Initialize the TeacherAbsenceTracker class
 class TeacherAbsenceTracker:
@@ -165,7 +165,7 @@ class TeacherAbsenceTracker:
         label_dates = tk.Label(rightBodyDiv, text="Select Dates:")
         label_dates.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
 
-        self.calendar = DateEntry(rightBodyDiv, width=12, background='#A31B37',
+        self.calendar = tkcalendar.DateEntry(rightBodyDiv, width=12, background='#A31B37',
                                   foreground='white', borderwidth=2)
         self.calendar.grid(row=1, column=1, padx=5, pady=5)
 
