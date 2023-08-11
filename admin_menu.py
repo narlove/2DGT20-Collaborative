@@ -13,6 +13,16 @@ import json
 
 import sorting_algorithm
 
+file_dir = os.path.dirname(os.path.abspath(__file__))
+absencedata_path = os.path.join(file_dir, "absencedata.csv")
+teacherlist_path = os.path.join(file_dir, "teacherlist.csv")
+
+desktop_path = os.path.join(file_dir, "Desktop.png")
+
+with open(absencedata_path, 'a') as f, open(teacherlist_path, 'a') as g:
+    # just to create the files if they dont exist
+    pass
+
 # <FUNCTIONS>
 
 def edit_file(options: dict[str, bool] = {'teacherlist.csv': False, 'absencedata.csv': False}, teacherTree: ttk.Treeview = None, absenceTree: ttk.Treeview = None):
@@ -31,7 +41,7 @@ def edit_file(options: dict[str, bool] = {'teacherlist.csv': False, 'absencedata
         if value == True:
             treeVar = teacherTree if key == 'teacherlist.csv' else absenceTree
             if treeVar == None: raise TypeError('The correct treeview variable needs to be provided for the file to be edited correctly.')
-            with open(f'temp{key}', 'w', newline='') as csvfile:
+            with open(os.path.join(file_dir, f'temp{key}'), 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile, delimiter=',')
 
                 for row in treeVar.get_children():
@@ -44,9 +54,8 @@ def edit_file(options: dict[str, bool] = {'teacherlist.csv': False, 'absencedata
                         toWrite.append(value)
                     writer.writerow(toWrite)
 
-            basePath = os.getcwd()
-            os.remove(basePath + f'/{key}')
-            os.rename(basePath + f'/temp{key}', basePath + f'/{key}')
+            os.remove(file_dir + f'\\{key}')
+            os.rename(file_dir + f'\\temp{key}', file_dir + f'\\{key}')
 
 # reader needs to be a csv reader passed in
 def sort_teachers_by_reliefs_EDIT(reader: list[list], teachersTree: ttk.Treeview):
@@ -118,7 +127,7 @@ def build_manage_staff():
         absencesTree.delete(item)
 
     # read data from the csv (yes, same code - needs to be in a function, in an optimised world)
-    with open('absencedata.csv', 'r', newline='') as csvfile:
+    with open(absencedata_path, 'r', newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
         count = 0
         for row in reader:
@@ -134,6 +143,11 @@ def build_manage_staff():
         topLevel.title('Select a substitute')
 
         selected = absencesTree.focus()
+
+        if selected == '' or selected == None:
+            topLevel.destroy()
+            return
+
         item = absencesTree.item(selected)
 
         teachersTree = ttk.Treeview(
@@ -160,24 +174,27 @@ def build_manage_staff():
             teachersTree.delete(item)
 
         # read data from the csv (yes, same code - needs to be in a function, in an optimised world)
-        with open('teacherlist.csv', 'r', newline='') as csvfile:
+        with open(teacherlist_path, 'r', newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',')
             argument = [row for row in reader]
         
         sort_teachers_by_reliefs_EDIT(reader=argument, teachersTree=teachersTree)
 
-            # count = 0
-            # for row in reader:
-            #     count += 1
-            #     teachersTree.insert('', tk.END, text="item"+str(count), values=[row[0], row[1]])
-
         def select_sub(event=None):
             selectedTeacher = teachersTree.focus()
             teacherItem = teachersTree.item(selectedTeacher)
 
+            if selectedTeacher == '' or selectedTeacher == None:
+                return
+
             if item['values'][5] != 'n/a':
                 subTeacherCode = item['values'][5]
-                
+
+                if subTeacherCode != 'n/a':
+                    askOkBool = messagebox.askokcancel('Are you sure you want to do this?', 'You are current attempting to override the substitute previously assigned to this teacher. Are you sure you want to do this?')
+                    if askOkBool == False:
+                        return
+
                 # on absences tree, check for which teacher has this code
                 for teacherTreeItem in teachersTree.get_children():
                     newItem = teachersTree.item(teacherTreeItem)
@@ -252,6 +269,10 @@ def build_admin_menu(rootWindow = tk.Tk):
     main_area.pack(expand=True, fill='both', side='right')
 
     Home_Label=ttk.Label(main_area, text= "Home" )
+
+    # background_image = tk.PhotoImage(file = desktop_path)
+    # graphicL = tk.Label(main_area, image = background_image)
+    # graphicL.pack()
 
     # Create button to clear all labels
     clear_button = ttk.Button(main_area, text="Clear Labels", command=delete_labels)
