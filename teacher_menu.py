@@ -9,7 +9,7 @@ from tkcalendar import DateEntry
 class TeacherAbsenceTracker:
     def __init__(self, rootWindow = tk.Tk):
         self.script_directory = os.path.dirname(os.path.abspath(__file__))
-        self.csv_file_path = os.path.join(self.script_directory, "teacher_absences.csv")
+        self.csv_file_path = os.path.join(self.script_directory, "absencedata.csv")
         self.absences = []
 
         self.rootWindow = rootWindow
@@ -121,16 +121,19 @@ class TeacherAbsenceTracker:
         self.absencesTree = ttk.Treeview(
             leftBodyDiv,
             show="headings",
-            columns=["teacher_name", "dates", "lesson_period"],
+            columns=["code", "startTime", "startDate", "endTime", "endDate", "relief"],
             height=5
         )  
 
         # Set column widths and headings for the Treeview
-        columnWidth = 200
+        columnWidth = 70
         columns = {
-            'teacher_name': 'Teacher Name',
-            'dates': 'Dates',
-            'lesson_period': 'Lesson Period'
+            'code': 'Code',
+            'startTime': 'Start Time',
+            'startDate': 'Start Date',
+            'endTime': 'End Time',
+            'endDate': 'End Date',
+            'relief': 'Sub Code'
         }
 
         for key, value in columns.items():
@@ -151,8 +154,7 @@ class TeacherAbsenceTracker:
             count = 0
             for row in reader:
                 count += 1
-                full_name, date_str, lesson_name = row
-                self.absencesTree.insert('', tk.END, text="item" + str(count), values=[full_name, date_str, lesson_name])
+                self.absencesTree.insert('', tk.END, text="item" + str(count), values=[row[0], row[1], row[2], row[3], row[4], row[5]])
 
 
         # Display input fields and submission button on the right side
