@@ -21,6 +21,17 @@ background_image = tk.PhotoImage(file = desktop_path)
 graphicL = tk.Label(window1, image = background_image)
 graphicL.pack()
 
+#converts user sign up data into the users.json file
+Window2=tk.Toplevel(window1)
+graphicZ=tk.Label(Window2,image=background_image)
+graphicZ.pack()
+Window2.geometry('800x580')
+Window2.resizable(width=False, height=False)
+entry_password = customTkinter.CTkEntry(Window2, bg_color = '#F9F4F5', placeholder_text = "Password", show = '*')
+entry_password.place(x = 330, y = 380)
+entry_name = customTkinter.CTkEntry(Window2, bg_color = '#F9F4F5', placeholder_text = "Username")
+entry_name.place(x = 330, y = 340)
+
 #creates the Width Variable in proportion of the users screen
 width = window1.winfo_screenwidth()
 
@@ -68,6 +79,9 @@ def submit_functionality(event = None):
         if foundUser == False or foundPass == False:
             messagebox.showerror('An error occured', 'Ensure the password and username match.')
 
+        if foundUser == True and foundPass == True:
+            window1.withdraw()
+
 #creates window 
 window1.geometry('800x580')
 window1.resizable(width=False, height=False)
@@ -82,12 +96,18 @@ entry_password.place(x = 330, y = 420)
 entry_name = customTkinter.CTkEntry(window1, bg_color = '#F9F4F5', placeholder_text = "Username")
 entry_name.place(x = 330, y = 390)
 
-button_enter = customTkinter.CTkButton(window1,bg_color = '#F9F4F5',fg_color = '#680067', hover_color = '#b142c1', height = 29, width = 50, text = "Enter", command = submit_functionality)
+sign_up=customTkinter.CTkButton(window1,bg_color='#F9F4F5', fg_color='#680067', hover_color = '#b142c1',height = 29, width = 50, text="Sign Up")
+sign_up.place(x=370,y=480)
+
+button_enter = customTkinter.CTkButton(window1,bg_color = '#F9F4F5',fg_color = '#680067', hover_color = '#b142c1', height = 29, width = 50, text ="Sign In",font=customTkinter.CTkFont("arial"),command = submit_functionality)
+
 button_enter.place(x = 470, y = 420)
 
 if not os.path.exists(users_path):
     messagebox.showwarning('An error may have occured', 'There have been no profiles previously established. If you believe this to be an error, please ensure your users.json file is intact and in the same directory as the root file (main.py)')
     with open(users_path, 'a') as f:
         pass
+
+window1.bind('<Return>',submit_functionality)
 
 window1.mainloop()
