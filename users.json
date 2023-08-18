@@ -28,5 +28,17 @@
         "password": "user",
         "name": "User",
         "isAdmin": false
+    },
+    "jan": {
+        "username": "nathan.james",
+        "password": "timmy",
+        "name": "nathan james",
+        "isAdmin": false
+    },
+    "jaj": {
+        "username": "john.jack",
+        "password": "password1",
+        "name": "john jack",
+        "isAdmin": false
     }
 }
