@@ -90,15 +90,15 @@ def sort_teachers_by_reliefs_EDIT(reader: list[list], teachersTree: ttk.Treeview
 
     edit_file({"teacherlist.csv": True}, teacherTree=teachersTree)
 
+# Create Function to go back to Login Page
+def go_back_to_login():
+    root.destroy()
+    main_window.deiconify()
+
 def delete_labels():
     for label in root.winfo_children():
         if type(label) == ttk.Label or type(label) == tk.Frame:
             label.destroy()
-
-# Create Function to go back to Login Page
-def go_back_to_login():
-    root.destroy()
-    os.system("python main.py")
 
 # Create Function into buttons from the main area
 def show_entry(entry_text):
@@ -114,21 +114,26 @@ def Home():
     for label in main_area.winfo_children():
         if type(label) == ttk.Label or type(label) == tk.Frame:
             label.destroy()
+    for button in main_area.winfo_children():
+        if type(button) == ttk.Button or type(button) == tk.Frame:
+            button.destroy()
     return_button = ttk.Button(
         main_area, text="Return to Login", style="TButton", command=go_back_to_login
     )
-    return_button.pack
+    return_button.pack()
 
 # function to draw up the treeview that should exist in the manage staff section
 def build_manage_staff():
     # need this to ensure the vbar gets put side by side, cause the current widget is already managed by pack
 
     for label in main_area.winfo_children():
-        if type(label) == ttk.Label or type(label) == tk.Frame:
+        if type(label) == ttk.Label or type(label) == tk.Frame or type(ttk.Treeview):
             label.destroy()
+    for button in main_area.winfo_children():
+        if type(button) == ttk.Button or type(button) == tk.Frame:
+            button.destroy()
     treeviewGridDiv = tk.Frame(main_area)
     treeviewGridDiv.pack()
-
     absencesTree = ttk.Treeview(
         treeviewGridDiv,
         show="headings",
@@ -206,7 +211,6 @@ def build_manage_staff():
                 text="item" + str(count),
                 values=[row[0], row[1], row[2], row[3], row[4], row[5]],
             )
-
     # <RIGHT>
 
     def draw_data(event=None):
@@ -382,33 +386,12 @@ def build_view_records(event=None):
 
 def build_admin_menu(rootWindow=tk.Tk):
     global root
-
+    global main_window
+    main_window = rootWindow
     root = tk.Toplevel(rootWindow)
     root.title("Relief Teacher Selector")
     root.geometry("800x475")
     root.resizable(width=False, height=False)
-    root.protocol("WM_DELETE_WINDOW", lambda: quit())
-
-    # Set style
-    style = ttk.Style(root)
-    style.theme_use("default")
-    style.configure(
-        "Home_label",
-        background="#D3D3D3",
-        foreground="black",
-        rowheight=25,
-        fieldbackground="#D3D3D3",
-    )
-    style.map(
-        "Home_label", background=[("selected", "#347083")]
-    )  # change the color of selected row
-
-    # Set style for Button
-    style.configure("TButton", font=("Arial", 12), bd=0, anchor="w")
-    style.map(
-        "TButton", background=[("active", "#eee")]
-    )  # change to a light gray color on hover
-
     # Create a frame for the sidebar
     sidebar = tk.Frame(
         root, width=200, bg="#fff", height=500, relief="sunken", borderwidth=2
@@ -417,7 +400,12 @@ def build_admin_menu(rootWindow=tk.Tk):
 
     # Create buttons in the sidebar with icons (using Unicode characters)
     home_button = ttk.Button(
-        sidebar, text="🏠 Home", style="TButton", width=20, padding=(10, 5), command=Home
+        sidebar,
+        text="🏠 Home",
+        style="TButton",
+        width=20,
+        padding=(10, 5),
+        command=Home
     )
     home_button.grid(row=1, column=1, ipady=10, ipadx=10)
 
@@ -431,16 +419,6 @@ def build_admin_menu(rootWindow=tk.Tk):
     )
     manage_staff_button.grid(row=50, column=1, ipady=10, ipadx=10)
 
-    manage_lessons_button = ttk.Button(
-        sidebar,
-        text="📅 Manage Lessons",
-        width=20,
-        style="TButton",
-        padding=(10, 50),
-        command=lambda: show_entry("Manage Lessons"),
-    )
-    manage_lessons_button.grid(row=100, column=1, ipady=10, ipadx=10)
-
     view_records_button = ttk.Button(
         sidebar,
         text="👀 View Records",
@@ -450,12 +428,36 @@ def build_admin_menu(rootWindow=tk.Tk):
         command=build_view_records,
     )
     view_records_button.grid(row=150, column=1, ipady=10, ipadx=10)
+    
 
     # Create a frame for the main area
     
     global main_area
 
-    main_area = tk.Frame(root, bg="purple")
+    main_area = tk.Frame(root)
     main_area.pack(expand=True, fill="both", side="right")
 
-    Home_Label = ttk.Label(main_area, text="Home")
+    # Colour scheme
+    primary_purple = "#6A1B9A"
+    secondary_purple = "#8E24AA"
+    text_color = "#FFFFFF"
+    bg_color = "#F3E5F5"
+
+    # Set theme
+    style = ttk.Style(root)
+    style.theme_use("default")
+    style.configure("TButton", font=("Arial", 12), background=primary_purple, foreground=text_color)
+    style.map("TButton", background=[("active", secondary_purple)])
+
+    # Apply colour scheme to sidebar
+    sidebar.config(bg=primary_purple)
+
+    # Apply colour scheme to main area
+    main_area.config(bg=bg_color)
+
+    # Add padding and alignment
+    home_button.grid(row=1, column=1, ipady=10, ipadx=10, padx=20, pady=10)
+    manage_staff_button.grid(row=2, column=1, ipady=10, ipadx=10, padx=20, pady=10)
+    view_records_button.grid(row=3, column=1, ipady=10, ipadx=10, padx=20, pady=10)
+
+    Home()
