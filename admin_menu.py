@@ -6,6 +6,7 @@ import customtkinter as customTkinter
 from PIL import ImageTk, Image
 
 from datetime import date
+import time
 from copy import copy
 
 import os
@@ -18,6 +19,7 @@ import sorting_algorithm
 file_dir = os.path.dirname(os.path.abspath(__file__))
 absencedata_path = os.path.join(file_dir, "absencedata.csv")
 teacherlist_path = os.path.join(file_dir, "teacherlist.csv")
+records_path = os.path.join(file_dir, "records.csv")
 
 desktop_path = os.path.join(file_dir, "Desktop.png")
 
@@ -25,9 +27,7 @@ with open(absencedata_path, 'a') as f, open(teacherlist_path, 'a') as g:
     # just to create the files if they dont exist
     pass
 
-
 # <FUNCTIONS>
-
 
 def edit_file(
     options: dict[str, bool] = {"teacherlist.csv": False, "absencedata.csv": False},
@@ -90,18 +90,15 @@ def sort_teachers_by_reliefs_EDIT(reader: list[list], teachersTree: ttk.Treeview
 
     edit_file({"teacherlist.csv": True}, teacherTree=teachersTree)
 
+# Create Function to go back to Login Page
+def go_back_to_login():
+    root.destroy()
+    main_window.deiconify()
 
 def delete_labels():
     for label in root.winfo_children():
         if type(label) == ttk.Label or type(label) == tk.Frame:
             label.destroy()
-
-
-# Create Function to go back to Login Page
-def go_back_to_login():
-    root.destroy()
-    os.system("python main.py")
-
 
 # Create Function into buttons from the main area
 def show_entry(entry_text):
@@ -112,28 +109,31 @@ def show_entry(entry_text):
     label = ttk.Label(main_area, text=entry_text)
     label.pack()
 
-
 # Home
 def Home():
     for label in main_area.winfo_children():
         if type(label) == ttk.Label or type(label) == tk.Frame:
             label.destroy()
+    for button in main_area.winfo_children():
+        if type(button) == ttk.Button or type(button) == tk.Frame:
+            button.destroy()
     return_button = ttk.Button(
         main_area, text="Return to Login", style="TButton", command=go_back_to_login
     )
-    return_button.pack
-
+    return_button.pack()
 
 # function to draw up the treeview that should exist in the manage staff section
 def build_manage_staff():
     # need this to ensure the vbar gets put side by side, cause the current widget is already managed by pack
 
     for label in main_area.winfo_children():
-        if type(label) == ttk.Label or type(label) == tk.Frame:
+        if type(label) == ttk.Label or type(label) == tk.Frame or type(ttk.Treeview):
             label.destroy()
+    for button in main_area.winfo_children():
+        if type(button) == ttk.Button or type(button) == tk.Frame:
+            button.destroy()
     treeviewGridDiv = tk.Frame(main_area)
     treeviewGridDiv.pack()
-
     absencesTree = ttk.Treeview(
         treeviewGridDiv,
         show="headings",
@@ -164,6 +164,38 @@ def build_manage_staff():
     absencesTree.configure(yscrollcommand=vbar.set)
     vbar.grid(row=1, column=2, sticky="ns")
 
+    # checking that any data is not after the current time
+    # if time to optimise, use the edit_file function for this probably (might need slight changes thats why its not done now)
+    currentTime = time.time()
+    with open(absencedata_path, 'r') as csvfile, open(os.path.join(file_dir, f'tempabsencedata.csv'), 'w', newline='') as wcsvfile, open(records_path, 'a', newline='') as rcsvfile:
+        reader = csv.reader(csvfile)
+        writer = csv.writer(wcsvfile, delimiter=',')
+        recordsWriter = csv.writer(rcsvfile, delimiter=',')
+
+        toWrite = []
+        recordsToWrite = []
+        for row in reader:
+            try:
+                constructedTime = time.strptime(f'{row[3]} {row[4]}', '%H:%M %d/%m/%Y')
+                constructedSeconds = time.mktime(constructedTime)
+            except ValueError:
+                messagebox.showerror('An error occured', 'Your absence data file is not correctly formatted. Please call an administrator to resolve the issue.')
+
+            if constructedSeconds > currentTime:
+                toWrite.append(row)
+            else:
+                recordsToWrite.append(row)
+
+        # reappending to temp file
+        for row in toWrite:
+            writer.writerow(row)
+
+        for row in recordsToWrite:
+            recordsWriter.writerow(row)
+
+    os.remove(os.path.join(file_dir, f'absencedata.csv'))
+    os.rename(os.path.join(file_dir, f'tempabsencedata.csv'), os.path.join(file_dir, f'absencedata.csv'))
+
     for item in absencesTree.get_children():
         absencesTree.delete(item)
 
@@ -179,7 +211,6 @@ def build_manage_staff():
                 text="item" + str(count),
                 values=[row[0], row[1], row[2], row[3], row[4], row[5]],
             )
-
     # <RIGHT>
 
     def draw_data(event=None):
@@ -213,8 +244,8 @@ def build_manage_staff():
         teachersTree.configure(yscrollcommand=vbar.set)
         vbar.grid(row=0, column=1, sticky="ns")
 
-        for item in teachersTree.get_children():
-            teachersTree.delete(item)
+        for item_ in teachersTree.get_children():
+            teachersTree.delete(item_)
 
         # read data from the csv (yes, same code - needs to be in a function, in an optimised world)
         with open(teacherlist_path, 'r', newline='') as csvfile:
@@ -237,6 +268,29 @@ def build_manage_staff():
                     askOkBool = messagebox.askokcancel('Are you sure you want to do this?', 'You are current attempting to override the substitute previously assigned to this teacher. Are you sure you want to do this?')
                     if askOkBool == False:
                         return
+
+                # check if the subteacherscode is assigned to any other teacher
+
+                # HOW?!:
+                # get all teachers in absencetree
+                # if the teacher gotten is at the same index ['item'] = 0 as the one we are checking
+                # ignore it
+                # otherwise, check if the sub code we are attempting to set (subTeacherCode) belongs to anyone else
+
+                # check if this (teacherItem["values"][0]) is preexist as a teacher code in the absences tree
+
+                for items in absencesTree.get_children():
+                    seralizedItem = absencesTree.item(items)
+
+                    # check here that its not the same line
+                    if seralizedItem['text'] == item['text']:
+                        continue
+
+                    # then here should be whether it is preexisting
+                    if seralizedItem['values'][5] == teacherItem["values"][0]:
+                        tempbool = messagebox.askokcancel('Are you sure you want to do this?', 'This subsitute is already assigned to another absence.')
+                        if tempbool == False:
+                            return
 
                 # on absences tree, check for which teacher has this code
                 for teacherTreeItem in teachersTree.get_children():
@@ -275,38 +329,69 @@ def build_manage_staff():
 
     absencesTree.bind("<Double-Button-1>", draw_data)
 
+def build_view_records(event=None):
+    for label in main_area.winfo_children():
+        if type(label) == ttk.Label or type(label) == tk.Frame:
+            label.destroy()
+
+    treeviewGridDiv = tk.Frame(main_area)
+    treeviewGridDiv.pack()
+
+    absencesTree = ttk.Treeview(
+        treeviewGridDiv,
+        show="headings",
+        columns=["code", "startTime", "startDate", "endTime", "endDate", "relief"],
+        height=5,
+    )  # table
+
+    columnWidth = 70
+
+    # to make it a for loop, so we don't have to have 10 ugly lines and it can be slightly dynamic
+    columns = {
+        "code": "Code",
+        "startTime": "Start Time",
+        "startDate": "Start Date",
+        "endTime": "End Time",
+        "endDate": "End Date",
+        "relief": "Sub Code",
+    }
+
+    for key, value in columns.items():
+        absencesTree.column(key, width=columnWidth)
+        absencesTree.heading(key, text=value)
+
+    absencesTree.grid(row=1, column=1)
+    vbar = ttk.Scrollbar(
+        treeviewGridDiv, orient=tk.VERTICAL, command=absencesTree.yview
+    )
+    absencesTree.configure(yscrollcommand=vbar.set)
+    vbar.grid(row=1, column=2, sticky="ns")
+
+    # read data from the csv (yes, same code - needs to be in a function, in an optimised world)
+    with open(records_path, 'r', newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',')
+        count = 0
+        for row in reader:
+            count += 1
+            absencesTree.insert(
+                "",
+                tk.END,
+                text="item" + str(count),
+                values=[row[0], row[1], row[2], row[3], row[4], row[5]],
+            )
+
+    # <RIGHT>
 
 # </FUNCTIONS>
 
 def build_admin_menu(rootWindow=tk.Tk):
     global root
-
+    global main_window
+    main_window = rootWindow
     root = tk.Toplevel(rootWindow)
     root.title("Relief Teacher Selector")
     root.geometry("800x475")
     root.resizable(width=False, height=False)
-    root.protocol("WM_DELETE_WINDOW", lambda: quit())
-
-    # Set style
-    style = ttk.Style(root)
-    style.theme_use("default")
-    style.configure(
-        "Home_label",
-        background="#D3D3D3",
-        foreground="black",
-        rowheight=25,
-        fieldbackground="#D3D3D3",
-    )
-    style.map(
-        "Home_label", background=[("selected", "#347083")]
-    )  # change the color of selected row
-
-    # Set style for Button
-    style.configure("TButton", font=("Arial", 12), bd=0, anchor="w")
-    style.map(
-        "TButton", background=[("active", "#eee")]
-    )  # change to a light gray color on hover
-
     # Create a frame for the sidebar
     sidebar = tk.Frame(
         root, width=200, bg="#fff", height=500, relief="sunken", borderwidth=2
@@ -315,7 +400,12 @@ def build_admin_menu(rootWindow=tk.Tk):
 
     # Create buttons in the sidebar with icons (using Unicode characters)
     home_button = ttk.Button(
-        sidebar, text="🏠 Home", style="TButton", width=20, padding=(10, 5), command=Home
+        sidebar,
+        text="🏠 Home",
+        style="TButton",
+        width=20,
+        padding=(10, 5),
+        command=Home
     )
     home_button.grid(row=1, column=1, ipady=10, ipadx=10)
 
@@ -329,31 +419,45 @@ def build_admin_menu(rootWindow=tk.Tk):
     )
     manage_staff_button.grid(row=50, column=1, ipady=10, ipadx=10)
 
-    manage_lessons_button = ttk.Button(
-        sidebar,
-        text="📅 Manage Lessons",
-        width=20,
-        style="TButton",
-        padding=(10, 50),
-        command=lambda: show_entry("Manage Lessons"),
-    )
-    manage_lessons_button.grid(row=100, column=1, ipady=10, ipadx=10)
-
     view_records_button = ttk.Button(
         sidebar,
         text="👀 View Records",
         width=20,
         style="TButton",
         padding=(10, 50),
-        command=lambda: show_entry("View Records"),
+        command=build_view_records,
     )
     view_records_button.grid(row=150, column=1, ipady=10, ipadx=10)
+    
 
     # Create a frame for the main area
     
     global main_area
 
-    main_area = tk.Frame(root, bg="purple")
+    main_area = tk.Frame(root)
     main_area.pack(expand=True, fill="both", side="right")
 
-    Home_Label = ttk.Label(main_area, text="Home")
+    # Colour scheme
+    primary_purple = "#6A1B9A"
+    secondary_purple = "#8E24AA"
+    text_color = "#FFFFFF"
+    bg_color = "#F3E5F5"
+
+    # Set theme
+    style = ttk.Style(root)
+    style.theme_use("default")
+    style.configure("TButton", font=("Arial", 12), background=primary_purple, foreground=text_color)
+    style.map("TButton", background=[("active", secondary_purple)])
+
+    # Apply colour scheme to sidebar
+    sidebar.config(bg=primary_purple)
+
+    # Apply colour scheme to main area
+    main_area.config(bg=bg_color)
+
+    # Add padding and alignment
+    home_button.grid(row=1, column=1, ipady=10, ipadx=10, padx=20, pady=10)
+    manage_staff_button.grid(row=2, column=1, ipady=10, ipadx=10, padx=20, pady=10)
+    view_records_button.grid(row=3, column=1, ipady=10, ipadx=10, padx=20, pady=10)
+
+    Home()
