@@ -6,6 +6,7 @@ import customtkinter as customTkinter
 from PIL import ImageTk, Image
 
 from datetime import date
+import time
 from copy import copy
 
 import os
@@ -18,6 +19,7 @@ import sorting_algorithm
 file_dir = os.path.dirname(os.path.abspath(__file__))
 absencedata_path = os.path.join(file_dir, "absencedata.csv")
 teacherlist_path = os.path.join(file_dir, "teacherlist.csv")
+records_path = os.path.join(file_dir, "records.csv")
 
 desktop_path = os.path.join(file_dir, "Desktop.png")
 
@@ -25,9 +27,7 @@ with open(absencedata_path, 'a') as f, open(teacherlist_path, 'a') as g:
     # just to create the files if they dont exist
     pass
 
-
 # <FUNCTIONS>
-
 
 def edit_file(
     options: dict[str, bool] = {"teacherlist.csv": False, "absencedata.csv": False},
@@ -90,18 +90,15 @@ def sort_teachers_by_reliefs_EDIT(reader: list[list], teachersTree: ttk.Treeview
 
     edit_file({"teacherlist.csv": True}, teacherTree=teachersTree)
 
-
 def delete_labels():
     for label in root.winfo_children():
         if type(label) == ttk.Label or type(label) == tk.Frame:
             label.destroy()
 
-
 # Create Function to go back to Login Page
 def go_back_to_login():
     root.destroy()
     os.system("python main.py")
-
 
 # Create Function into buttons from the main area
 def show_entry(entry_text):
@@ -112,7 +109,6 @@ def show_entry(entry_text):
     label = ttk.Label(main_area, text=entry_text)
     label.pack()
 
-
 # Home
 def Home():
     for label in main_area.winfo_children():
@@ -122,7 +118,6 @@ def Home():
         main_area, text="Return to Login", style="TButton", command=go_back_to_login
     )
     return_button.pack
-
 
 # function to draw up the treeview that should exist in the manage staff section
 def build_manage_staff():
@@ -163,6 +158,38 @@ def build_manage_staff():
     )
     absencesTree.configure(yscrollcommand=vbar.set)
     vbar.grid(row=1, column=2, sticky="ns")
+
+    # checking that any data is not after the current time
+    # if time to optimise, use the edit_file function for this probably (might need slight changes thats why its not done now)
+    currentTime = time.time()
+    with open(absencedata_path, 'r') as csvfile, open(os.path.join(file_dir, f'tempabsencedata.csv'), 'w', newline='') as wcsvfile, open(records_path, 'a', newline='') as rcsvfile:
+        reader = csv.reader(csvfile)
+        writer = csv.writer(wcsvfile, delimiter=',')
+        recordsWriter = csv.writer(rcsvfile, delimiter=',')
+
+        toWrite = []
+        recordsToWrite = []
+        for row in reader:
+            try:
+                constructedTime = time.strptime(f'{row[3]} {row[4]}', '%H:%M %d/%m/%Y')
+                constructedSeconds = time.mktime(constructedTime)
+            except ValueError:
+                messagebox.showerror('An error occured', 'Your absence data file is not correctly formatted. Please call an administrator to resolve the issue.')
+
+            if constructedSeconds > currentTime:
+                toWrite.append(row)
+            else:
+                recordsToWrite.append(row)
+
+        # reappending to temp file
+        for row in toWrite:
+            writer.writerow(row)
+
+        for row in recordsToWrite:
+            recordsWriter.writerow(row)
+
+    os.remove(os.path.join(file_dir, f'absencedata.csv'))
+    os.rename(os.path.join(file_dir, f'tempabsencedata.csv'), os.path.join(file_dir, f'absencedata.csv'))
 
     for item in absencesTree.get_children():
         absencesTree.delete(item)
@@ -213,8 +240,8 @@ def build_manage_staff():
         teachersTree.configure(yscrollcommand=vbar.set)
         vbar.grid(row=0, column=1, sticky="ns")
 
-        for item in teachersTree.get_children():
-            teachersTree.delete(item)
+        for item_ in teachersTree.get_children():
+            teachersTree.delete(item_)
 
         # read data from the csv (yes, same code - needs to be in a function, in an optimised world)
         with open(teacherlist_path, 'r', newline='') as csvfile:
@@ -237,6 +264,29 @@ def build_manage_staff():
                     askOkBool = messagebox.askokcancel('Are you sure you want to do this?', 'You are current attempting to override the substitute previously assigned to this teacher. Are you sure you want to do this?')
                     if askOkBool == False:
                         return
+
+                # check if the subteacherscode is assigned to any other teacher
+
+                # HOW?!:
+                # get all teachers in absencetree
+                # if the teacher gotten is at the same index ['item'] = 0 as the one we are checking
+                # ignore it
+                # otherwise, check if the sub code we are attempting to set (subTeacherCode) belongs to anyone else
+
+                # check if this (teacherItem["values"][0]) is preexist as a teacher code in the absences tree
+
+                for items in absencesTree.get_children():
+                    seralizedItem = absencesTree.item(items)
+
+                    # check here that its not the same line
+                    if seralizedItem['text'] == item['text']:
+                        continue
+
+                    # then here should be whether it is preexisting
+                    if seralizedItem['values'][5] == teacherItem["values"][0]:
+                        tempbool = messagebox.askokcancel('Are you sure you want to do this?', 'This subsitute is already assigned to another absence.')
+                        if tempbool == False:
+                            return
 
                 # on absences tree, check for which teacher has this code
                 for teacherTreeItem in teachersTree.get_children():
@@ -275,6 +325,58 @@ def build_manage_staff():
 
     absencesTree.bind("<Double-Button-1>", draw_data)
 
+def build_view_records(event=None):
+    for label in main_area.winfo_children():
+        if type(label) == ttk.Label or type(label) == tk.Frame:
+            label.destroy()
+
+    treeviewGridDiv = tk.Frame(main_area)
+    treeviewGridDiv.pack()
+
+    absencesTree = ttk.Treeview(
+        treeviewGridDiv,
+        show="headings",
+        columns=["code", "startTime", "startDate", "endTime", "endDate", "relief"],
+        height=5,
+    )  # table
+
+    columnWidth = 70
+
+    # to make it a for loop, so we don't have to have 10 ugly lines and it can be slightly dynamic
+    columns = {
+        "code": "Code",
+        "startTime": "Start Time",
+        "startDate": "Start Date",
+        "endTime": "End Time",
+        "endDate": "End Date",
+        "relief": "Sub Code",
+    }
+
+    for key, value in columns.items():
+        absencesTree.column(key, width=columnWidth)
+        absencesTree.heading(key, text=value)
+
+    absencesTree.grid(row=1, column=1)
+    vbar = ttk.Scrollbar(
+        treeviewGridDiv, orient=tk.VERTICAL, command=absencesTree.yview
+    )
+    absencesTree.configure(yscrollcommand=vbar.set)
+    vbar.grid(row=1, column=2, sticky="ns")
+
+    # read data from the csv (yes, same code - needs to be in a function, in an optimised world)
+    with open(records_path, 'r', newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',')
+        count = 0
+        for row in reader:
+            count += 1
+            absencesTree.insert(
+                "",
+                tk.END,
+                text="item" + str(count),
+                values=[row[0], row[1], row[2], row[3], row[4], row[5]],
+            )
+
+    # <RIGHT>
 
 # </FUNCTIONS>
 
@@ -345,7 +447,7 @@ def build_admin_menu(rootWindow=tk.Tk):
         width=20,
         style="TButton",
         padding=(10, 50),
-        command=lambda: show_entry("View Records"),
+        command=build_view_records,
     )
     view_records_button.grid(row=150, column=1, ipady=10, ipadx=10)
 
