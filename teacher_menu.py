@@ -1,9 +1,11 @@
 import csv
 import tkinter as tk
+import customtkinter as ctk
 from tkinter import ttk, messagebox
 from datetime import datetime
 import os
-import tkcalendar 
+import tkcalendar
+from tkcalendar import DateEntry 
 
 # Initialize the TeacherAbsenceTracker class
 class TeacherAbsenceTracker:
@@ -13,26 +15,28 @@ class TeacherAbsenceTracker:
         self.absences = []
 
         self.rootWindow = rootWindow
-
-        self.lesson_periods = ["Lesson 1", "Lesson 2", "Lesson 3", "Lesson 4"]
-        self.lesson_to_index = {lesson: idx for idx, lesson in enumerate(self.lesson_periods)}
+        
+        self.selected_start_time = tk.StringVar()  # Initialize the selected start time
+        self.selected_end_time = tk.StringVar()    # Initialize the selected end time
 
     # Check if the CSV file exists. If not, create the file with header columns.
     def check_csv_file(self):
         if not os.path.exists(self.csv_file_path):
             with open(self.csv_file_path, mode="w", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow(["full_name", "date_str", "lesson_name"])
+                writer.writerow(["teacher code", "start time", "start date", "end time", "end date"])
 
     # Save the teacher absences to the CSV file
     def save_absences(self):
         with open(self.csv_file_path, mode="w", newline="") as file:
             writer = csv.writer(file)
-            writer.writerow(["full_name", "date_str", "lesson_name"])
             for absence in self.absences:
-                full_name, date_str, lesson = absence
-                lesson_name = self.lesson_periods[lesson]
-                writer.writerow([full_name, date_str, lesson_name])
+                teacher_code = absence["teacher_code"]
+                start_time = absence["start_time"]
+                start_date = absence["start_date"]
+                end_time = absence["end_time"]
+                end_date = absence["end_date"]
+                writer.writerow([teacher_code, start_time, start_date, end_time, end_date, "n/a"])
 
     # Start the application by checking CSV file, loading existing absences, and creating the GUI
     def run(self):
@@ -47,13 +51,14 @@ class TeacherAbsenceTracker:
                 reader = csv.reader(file)
                 for row in reader:
                     try:
-                        full_name, date_str, lesson_name = row[:3]
-                        if lesson_name.isdigit():
-                            lesson = int(lesson_name)
-                        else:
-                            lesson = self.lesson_to_index.get(lesson_name)
-                        if lesson is not None and lesson in range(len(self.lesson_periods)):
-                            self.absences.append([full_name, date_str, lesson])
+                        teacher_code, start_time, start_date, end_time, end_date = row[:5]
+                        self.absences.append({
+                            "teacher_code": teacher_code,
+                            "start_time": start_time,
+                            "start_date": start_date,
+                            "end_time": end_time,
+                            "end_date": end_date
+                        })
                     except ValueError:
                         print(f"Skipping invalid row: {row}")
         except FileNotFoundError:
@@ -61,20 +66,24 @@ class TeacherAbsenceTracker:
 
     # Submit a new absence request for a teacher
     def submit_absence(self):
-        start_date = self.calendar.get_date()
-        lesson = self.selected_lesson.get()
+        teacher_code = self.entry_teacher_code.get()
+        start_date = self.entry_start_date.get_date().strftime("%d/%m/%Y")
+        start_time = self.selected_start_time.get()  # Use the selected start time from the dropdown
+        end_time = self.selected_end_time.get()  # Use the selected end time from the dropdown
+        end_date = self.entry_end_date.get_date().strftime("%d/%m/%Y")
 
-        if not start_date or not lesson:
+        if not teacher_code or not start_date or not start_time or not end_time or not end_date:
             messagebox.showerror("Error", "All fields are required.")
             return
 
-        lesson_index = self.lesson_to_index.get(lesson)
-
-        if lesson_index is None:
-            messagebox.showerror("Error", "Invalid lesson period.")
-            return
-
-        absence_data = [self.entry_full_name.get(), start_date.strftime("%Y-%m-%d"), lesson_index]
+        absence_data = {
+            "teacher_code": teacher_code,
+            "start_time": start_time,
+            "start_date": start_date,
+            "end_time": end_time,
+            "end_date": end_date,
+            "relief": "n/a"
+        }
         self.absences.append(absence_data)
         self.save_absences()
 
@@ -83,14 +92,17 @@ class TeacherAbsenceTracker:
 
     # Clear input fields after submitting an absence
     def clear_input_fields(self):
-        self.calendar.delete(0, tk.END)
-        self.selected_lesson.set("")
+        self.entry_teacher_code.delete(0, tk.END)
+        self.selected_start_time.set("")  # Clear the selected start time
+        self.selected_end_time.set("")  # Clear the selected end time
+        self.entry_start_date.set_date(None)  # Clear the start date entry
+        self.entry_end_date.set_date(None)  # Clear the end date entry
 
     # Create the GUI for the application
     def create_gui(self):
         self.window = tk.Toplevel(self.rootWindow)
         self.window.protocol("WM_DELETE_WINDOW", lambda: quit())
-        self.window.geometry('1000x400')
+        self.window.geometry('1150x400')
         self.window.title('Teacher Absence Tracker')
         self.window.resizable(width=False, height=False)
 
@@ -118,33 +130,37 @@ class TeacherAbsenceTracker:
         absenteeLabel = tk.Label(leftBodyDiv, text='Teacher Leave requests')
         absenteeLabel.grid(column=1, row=0)
 
+        columnWidth = 125  # You can adjust this value based on your preference
+
+        # Create the Treeview widget
         self.absencesTree = ttk.Treeview(
             leftBodyDiv,
             show="headings",
-            columns=["code", "startTime", "startDate", "endTime", "endDate", "relief"],
+            columns=["teacher_name", "start_time", "start_date", "end_time", "end_date", "relief"],
             height=5
-        )  
+        )
 
-        # Set column widths and headings for the Treeview
-        columnWidth = 70
+        # Configure columns and headings
         columns = {
-            'code': 'Code',
-            'startTime': 'Start Time',
-            'startDate': 'Start Date',
-            'endTime': 'End Time',
-            'endDate': 'End Date',
-            'relief': 'Sub Code'
+            "teacher_name": 'Teacher Code',
+            "start_time": 'Start Time',
+            "start_date": 'Start Date',
+            "end_time": 'End Time',
+            "end_date": 'End Date',
+            "relief": "Substitute Code"
         }
 
-        for key, value in columns.items():
-            self.absencesTree.column(key, width=columnWidth)
-            self.absencesTree.heading(key, text=value)
+        for col_id, col_heading in columns.items():
+            self.absencesTree.column(col_id, width=columnWidth)
+            self.absencesTree.heading(col_id, text=col_heading)
 
+        # Set up Treeview layout and scrollbar
         self.absencesTree.grid(row=1, column=1)
         vbar = ttk.Scrollbar(leftBodyDiv, orient=tk.VERTICAL, command=self.absencesTree.yview)
         self.absencesTree.configure(yscrollcommand=vbar.set)
         vbar.grid(row=1, column=2, sticky='ns')
 
+        # Clear any existing items
         for item in self.absencesTree.get_children():
             self.absencesTree.delete(item)
 
@@ -154,42 +170,64 @@ class TeacherAbsenceTracker:
             count = 0
             for row in reader:
                 count += 1
-                self.absencesTree.insert('', tk.END, text="item" + str(count), values=[row[0], row[1], row[2], row[3], row[4], row[5]])
-
+                if len(row) >= 5:
+                    teacher_code, start_time, start_date, end_time, end_date, relief = row
+                else:
+                    # Handle rows with fewer than 5 values
+                    teacher_code = start_time = start_date = end_time = end_date = ""
+                    for i, value in enumerate(row):
+                        if i == 0:
+                            teacher_code = value
+                        elif i == 1:
+                            start_time = value
+                        elif i == 2:
+                            start_date = value
+                        elif i == 3:
+                            end_time = value
+                        elif i == 4:
+                            end_date = value
+                        elif i == 5:
+                            relief = value
+                self.absencesTree.insert('', tk.END, values=[teacher_code, start_time, start_date, end_time, end_date, "n/a"])
 
         # Display input fields and submission button on the right side
-        label_full_name = tk.Label(rightBodyDiv, text="Full Name:")
-        label_full_name.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        label_teacher_code = tk.Label(rightBodyDiv, text="Teacher Code:")
+        label_teacher_code.grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
 
-        self.entry_full_name = tk.Entry(rightBodyDiv)
-        self.entry_full_name.grid(row=0, column=1, padx=5, pady=5)
+        self.entry_teacher_code = tk.Entry(rightBodyDiv)
+        self.entry_teacher_code.grid(row=4, column=1, padx=5, pady=5)
 
-        label_dates = tk.Label(rightBodyDiv, text="Select Dates:")
-        label_dates.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+        # Dropdown menu for selecting start time
+        start_time_label = tk.Label(rightBodyDiv, text="Start Time:")
+        start_time_label.grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
 
-        self.calendar = tkcalendar.DateEntry(rightBodyDiv, width=12, background='#A31B37',
-                                  foreground='white', borderwidth=2)
-        self.calendar.grid(row=1, column=1, padx=5, pady=5)
+        start_time_values = ["08:00", "09:00", "10:00", "11:00", "12:00",
+                             "13:00", "14:00", "15:00", "16:00", "17:00"]
+        start_time_menu = ttk.Combobox(rightBodyDiv, textvariable=self.selected_start_time, values=start_time_values)
+        start_time_menu.grid(row=5, column=1, padx=5, pady=5)
 
-        label_lesson = tk.Label(rightBodyDiv, text="Select Lesson Period:")
-        label_lesson.grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
+        # Dropdown menu for selecting end time
+        end_time_label = tk.Label(rightBodyDiv, text="End Time:")
+        end_time_label.grid(row=6, column=0, padx=5, pady=5, sticky=tk.W)
 
-        self.selected_lesson = tk.StringVar(rightBodyDiv)
-        self.lesson_dropdown = ttk.Combobox(rightBodyDiv, textvariable=self.selected_lesson,
-                                            values=self.lesson_periods, width=15)
-        self.lesson_dropdown.grid(row=2, column=1, padx=5, pady=5)
+        end_time_values = ["08:00", "09:00", "10:00", "11:00", "12:00",
+                           "13:00", "14:00", "15:00", "16:00", "17:00"]
+        end_time_menu = ttk.Combobox(rightBodyDiv, textvariable=self.selected_end_time, values=end_time_values)
+        end_time_menu.grid(row=6, column=1, padx=5, pady=5)
 
-        button_frame = tk.Frame(rightBodyDiv)
-        button_frame.grid(row=3, column=0, columnspan=2, padx=5, pady=10)
+        label_start_date = tk.Label(rightBodyDiv, text="Start Date:")
+        label_start_date.grid(row=7, column=0, padx=5, pady=5, sticky=tk.W)
 
-        submit_button = tk.Button(button_frame, text="Submit", command=self.submit_absence)
-        submit_button.pack(side=tk.LEFT, padx=5)
+        self.entry_start_date = tkcalendar.DateEntry(rightBodyDiv)
+        self.entry_start_date.grid(row=7, column=1, padx=5, pady=5)
 
-if __name__ == '__main__':
-    root = tk.Tk()
-    newInstance = TeacherAbsenceTracker(root)
-    newInstance.run()
+        label_end_date = tk.Label(rightBodyDiv, text="End Date:")
+        label_end_date.grid(row=8, column=0, padx=5, pady=5, sticky=tk.W)
 
-    root.withdraw()
+        self.entry_end_date = tkcalendar.DateEntry(rightBodyDiv)
+        self.entry_end_date.grid(row=8, column=1, padx=5, pady=5)
 
-    root.mainloop()
+        # Create the "Submit" button
+        submit_button = tk.Button(rightBodyDiv, text="Submit Absence", command=self.submit_absence)
+        submit_button.grid(row=9, column=0, columnspan=2, padx=5, pady=10)
+
