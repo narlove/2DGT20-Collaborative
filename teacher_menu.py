@@ -1,195 +1,142 @@
-import csv
+from tkinter import *
+from tkinter import ttk
+from tkcalendar import *
 import tkinter as tk
-from tkinter import ttk, messagebox
-from datetime import datetime
+import customtkinter as ctk
+from PIL import Image, ImageTk
+import csv
+import messagebox
+import time
+from datetime import datetime, date
 import os
-import tkcalendar 
 
-# Initialize the TeacherAbsenceTracker class
-class TeacherAbsenceTracker:
-    def __init__(self, rootWindow = tk.Tk):
-        self.script_directory = os.path.dirname(os.path.abspath(__file__))
-        self.csv_file_path = os.path.join(self.script_directory, "absencedata.csv")
-        self.absences = []
+UserApp=ctk.CTk()
+UserApp.geometry('800x580')
+UserApp.resizable(width=False, height=False)
+background_image = tk.PhotoImage(file = 'UserGUI.png')
+graphicL = tk.Label(UserApp, image = background_image)
+graphicL.pack()
 
-        self.rootWindow = rootWindow
+script_directory = os.path.dirname(os.path.abspath(__file__))
+csv_file_path = os.path.join(script_directory, "teacher_absences.csv")
+absences = []
 
-        self.lesson_periods = ["Lesson 1", "Lesson 2", "Lesson 3", "Lesson 4"]
-        self.lesson_to_index = {lesson: idx for idx, lesson in enumerate(self.lesson_periods)}
-
-    # Check if the CSV file exists. If not, create the file with header columns.
-    def check_csv_file(self):
-        if not os.path.exists(self.csv_file_path):
-            with open(self.csv_file_path, mode="w", newline="") as file:
+def check_csv_file():
+        if not os.path.exists(csv_file_path):
+            with open(csv_file_path, mode="w", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow(["full_name", "date_str", "lesson_name"])
+                writer.writerow(["teacher code", "start time", "start date", "end time", "end date"])
 
-    # Save the teacher absences to the CSV file
-    def save_absences(self):
-        with open(self.csv_file_path, mode="w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(["full_name", "date_str", "lesson_name"])
-            for absence in self.absences:
-                full_name, date_str, lesson = absence
-                lesson_name = self.lesson_periods[lesson]
-                writer.writerow([full_name, date_str, lesson_name])
+def write_data(): #command for submit button
+    #user info
+    TeacherCode = nameEntry.get()
+    Startdate = startDateEntry.get()
+    StartTime = startTimeEntry.get()
+    Enddate = endDateEntry.get()
+    EndTime = endTimeEntry.get()
+    leavetype = combobox_var.get()
+    print(Startdate)
+    print(StartTime)
+    print(Enddate)
+    print(EndTime)
+    print(leavetype)
+    print(TeacherCode)
 
-    # Start the application by checking CSV file, loading existing absences, and creating the GUI
-    def run(self):
-        self.check_csv_file()
-        self.load_absences()
-        self.create_gui()
+    #errors to make sure data is correct
+    if leavetype==("Absence type"):
+        messagebox.showerror('An error occured', 'Please choose your absence type.')
+       
+    elif Enddate < Startdate: #makes it so that user cannot choose invalid dates
+        messagebox.showerror('An error occured', 'You have chosen an end date before your starting date.')
+    elif TeacherCode == "": #doesnt allow Name to be blank
+        messagebox.showerror('An error occured', 'Please insert your credentials.')
+    elif Enddate == Startdate:
+        if EndTime <= StartTime: #if day is the same teacher cannot choose end time before starting time
+                messagebox.showerror('An error occured', 'You must choose an end time after your starting time.')
+        else:
+             with open("teacher absences.csv",mode="a", newline="") as f:
+                writer = csv.writer(f, delimiter=",")
+                writer.writerow([TeacherCode, Startdate, StartTime, Enddate, EndTime])
+                messagebox.showinfo('Success', 'Absence successfully submitted.')
+    else: #finally writes down the information in a CSV file
+         with open("teacher absences.csv",mode="a", newline="") as f:
+            writer = csv.writer(f, delimiter=",")
+            writer.writerow([TeacherCode, Startdate, StartTime, Enddate, EndTime])
+            messagebox.showinfo('Success', 'Absence successfully submitted.')
 
-    # Load teacher absences from the CSV file into the absences list
-    def load_absences(self):
-        try:
-            with open(self.csv_file_path, mode="r", newline="") as file:
-                reader = csv.reader(file)
-                for row in reader:
-                    try:
-                        full_name, date_str, lesson_name = row[:3]
-                        if lesson_name.isdigit():
-                            lesson = int(lesson_name)
-                        else:
-                            lesson = self.lesson_to_index.get(lesson_name)
-                        if lesson is not None and lesson in range(len(self.lesson_periods)):
-                            self.absences.append([full_name, date_str, lesson])
-                    except ValueError:
-                        print(f"Skipping invalid row: {row}")
-        except FileNotFoundError:
-            pass
+#return to main page
+def returnToMain():
+    UserApp.destroy()
+    UserApp.deiconify
 
-    # Submit a new absence request for a teacher
-    def submit_absence(self):
-        start_date = self.calendar.get_date()
-        lesson = self.selected_lesson.get()
+def pick_date1(event):
+    global cal1, date_window
 
-        if not start_date or not lesson:
-            messagebox.showerror("Error", "All fields are required.")
-            return
+    date_window = Toplevel()
+    date_window.grab_set()
+    date_window.title('select start of leave')
+    date_window.geometry('250x220+590+370')
+    cal1 = Calendar(date_window, selectmode="day", date_pattern="dd/mm/yy")
+    cal1.place(x=0, y=0)
+    submit_btn = Button(date_window, text="submit", command=grab_date1)
+    submit_btn.place(x=100, y=190)
+   
+#grab date1 command
+def grab_date1():
+    startDateEntry.delete(0, END)
+    startDateEntry.insert(0, cal1.get_date())
+    date_window.destroy() #destroys window
 
-        lesson_index = self.lesson_to_index.get(lesson)
+def pick_date2(event):
+    global cal2, date_window
 
-        if lesson_index is None:
-            messagebox.showerror("Error", "Invalid lesson period.")
-            return
+    date_window = Toplevel()
+    date_window.grab_set()
+    date_window.title('select end of leave')
+    date_window.geometry('250x220+590+370')
+    cal2 = Calendar(date_window, selectmode="day", date_pattern="dd/mm/yy")
+    cal2.place(x = 0, y=0)
 
-        absence_data = [self.entry_full_name.get(), start_date.strftime("%Y-%m-%d"), lesson_index]
-        self.absences.append(absence_data)
-        self.save_absences()
+    submit_btn = Button(date_window, text="submit", command=grab_date2)
+    submit_btn.place(x=100, y=190)
 
-        messagebox.showinfo("Success", "Absence submitted successfully.")
-        self.clear_input_fields()
-
-    # Clear input fields after submitting an absence
-    def clear_input_fields(self):
-        self.calendar.delete(0, tk.END)
-        self.selected_lesson.set("")
-
-    # Create the GUI for the application
-    def create_gui(self):
-        self.window = tk.Toplevel(self.rootWindow)
-        self.window.protocol("WM_DELETE_WINDOW", lambda: quit())
-        self.window.geometry('1000x400')
-        self.window.title('Teacher Absence Tracker')
-        self.window.resizable(width=False, height=False)
-
-        outerBannerDiv = ttk.Frame(self.window)
-        outerBannerDiv.pack(side='top', ipadx=500)
-
-        banner = ttk.Label(outerBannerDiv, text='', font=('Sarabun', 30, 'bold'), background='#a31b37', padding=15, anchor='n', width=100)
-        banner.place(x=0, y=0)
-
-        innerBannerDiv = tk.Frame(outerBannerDiv, bg='#a31b37')
-        innerBannerDiv.pack(pady=12.5, side='top')
-
-        text = tk.Label(innerBannerDiv, text='Teacher Absence Tracker', foreground='white', bg='#a31b37', font=('Sarabun', 30, 'bold'))
-        text.grid(column=0, row=0)
-
-        text.grid_configure(padx=(0, 30))
-
-        leftBodyDiv = tk.Frame(self.window)
-        leftBodyDiv.pack(side='left', padx=(50, 0))
-
-        rightBodyDiv = tk.Frame(self.window)
-        rightBodyDiv.pack(side='right', padx=(0, 50))
-
-        # Display teacher absences in a Treeview widget
-        absenteeLabel = tk.Label(leftBodyDiv, text='Teacher Leave requests')
-        absenteeLabel.grid(column=1, row=0)
-
-        self.absencesTree = ttk.Treeview(
-            leftBodyDiv,
-            show="headings",
-            columns=["code", "startTime", "startDate", "endTime", "endDate", "relief"],
-            height=5
-        )  
-
-        # Set column widths and headings for the Treeview
-        columnWidth = 70
-        columns = {
-            'code': 'Code',
-            'startTime': 'Start Time',
-            'startDate': 'Start Date',
-            'endTime': 'End Time',
-            'endDate': 'End Date',
-            'relief': 'Sub Code'
-        }
-
-        for key, value in columns.items():
-            self.absencesTree.column(key, width=columnWidth)
-            self.absencesTree.heading(key, text=value)
-
-        self.absencesTree.grid(row=1, column=1)
-        vbar = ttk.Scrollbar(leftBodyDiv, orient=tk.VERTICAL, command=self.absencesTree.yview)
-        self.absencesTree.configure(yscrollcommand=vbar.set)
-        vbar.grid(row=1, column=2, sticky='ns')
-
-        for item in self.absencesTree.get_children():
-            self.absencesTree.delete(item)
-
-        # Load existing absences into the Treeview
-        with open(self.csv_file_path, 'r', newline='') as csvfile:
-            reader = csv.reader(csvfile, delimiter=',')
-            count = 0
-            for row in reader:
-                count += 1
-                self.absencesTree.insert('', tk.END, text="item" + str(count), values=[row[0], row[1], row[2], row[3], row[4], row[5]])
+def grab_date2():
+    endDateEntry.delete(0, END)
+    endDateEntry.insert(0, cal2.get_date())
+    date_window.destroy()
 
 
-        # Display input fields and submission button on the right side
-        label_full_name = tk.Label(rightBodyDiv, text="Full Name:")
-        label_full_name.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
 
-        self.entry_full_name = tk.Entry(rightBodyDiv)
-        self.entry_full_name.grid(row=0, column=1, padx=5, pady=5)
+nameEntry = ctk.CTkEntry(master=UserApp, placeholder_text="Teacher Code", width=150, height=37, font=("Comic Sans", 16))
+nameEntry.place(x=337, y=100)
 
-        label_dates = tk.Label(rightBodyDiv, text="Select Dates:")
-        label_dates.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+startDateEntry = ctk.CTkEntry(master=UserApp, placeholder_text="Start Date", width=150, height=37)
+startDateEntry.place(x=187, y=162)
+startDateEntry.bind("<1>", pick_date1)
 
-        self.calendar = tkcalendar.DateEntry(rightBodyDiv, width=12, background='#A31B37',
-                                  foreground='white', borderwidth=2)
-        self.calendar.grid(row=1, column=1, padx=5, pady=5)
+endDateEntry = ctk.CTkEntry(master=UserApp, placeholder_text="End Date", width=150, height=37)
+endDateEntry.place(x=487, y=162)
+endDateEntry.bind("<1>", pick_date2)
 
-        label_lesson = tk.Label(rightBodyDiv, text="Select Lesson Period:")
-        label_lesson.grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
+startTime_var = ctk.StringVar(value="option 8")
+startTimeEntry = ctk.CTkComboBox(UserApp, dropdown_fg_color="#f9f4f5", width=150, height=37, values=["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00"], variable=startTime_var)
+startTime_var.set("Start Time")
+startTimeEntry.place(x=187, y=230)
 
-        self.selected_lesson = tk.StringVar(rightBodyDiv)
-        self.lesson_dropdown = ttk.Combobox(rightBodyDiv, textvariable=self.selected_lesson,
-                                            values=self.lesson_periods, width=15)
-        self.lesson_dropdown.grid(row=2, column=1, padx=5, pady=5)
+endTime_var = ctk.StringVar(value="option 8")
+endTimeEntry = ctk.CTkComboBox(UserApp, dropdown_fg_color="#f9f4f5",width=150, height=37, values=["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00"], variable=endTime_var)
+endTime_var.set("End Time")
+endTimeEntry.place(x=487, y=230)
 
-        button_frame = tk.Frame(rightBodyDiv)
-        button_frame.grid(row=3, column=0, columnspan=2, padx=5, pady=10)
+combobox_var = ctk.StringVar(value="option 5")
+combobox = ctk.CTkComboBox(UserApp,dropdown_fg_color="#f9f4f5" ,width=150, height=37, values=["sick leave", "parental leave", "long service leave", "unpaid time off", "personal leave"], variable=combobox_var)
+combobox_var.set("Absence type")
+combobox.place(x=337, y=300)
 
-        submit_button = tk.Button(button_frame, text="Submit", command=self.submit_absence)
-        submit_button.pack(side=tk.LEFT, padx=5)
+returnToLoginButton = ctk.CTkButton(UserApp, text="Return", height=50, width=150, fg_color="#f9f4f5", text_color="black", hover_color="#e8e3e4", command=returnToMain)
+returnToLoginButton.place(x=64,y=500)
 
-if __name__ == '__main__':
-    root = tk.Tk()
-    newInstance = TeacherAbsenceTracker(root)
-    newInstance.run()
+submitButton = ctk.CTkButton(UserApp, text="Submit", height=50, width=150, fg_color="#f9f4f5", text_color="black", hover_color="#e8e3e4", command=write_data)
+submitButton.place(x=586,y=500)
 
-    root.withdraw()
-
-    root.mainloop()
+UserApp.mainloop()
