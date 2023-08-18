@@ -1,4 +1,3 @@
-from tkinter import *
 from tkinter import ttk, messagebox
 from tkcalendar import *
 import tkinter as tk
