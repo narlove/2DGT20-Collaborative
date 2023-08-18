@@ -54,16 +54,14 @@ def submit_functionality(event = None):
 
             if password != fullProfile["password"]: continue
             foundPass = True
-
             if fullProfile['isAdmin'] == True:
                 build_admin_menu(window1)
                 window1.withdraw()
             else:
                 teacherMenu = build_teacher_window(rootWindow=window1)
-                #teacherMenu.run()   
+                window1.update()
 
-                window1.withdraw()
-                #teacherMenu.window.deiconify()            
+                window1.withdraw()   
 
         if foundUser == False or foundPass == False:
             messagebox.showerror('An error occured', 'Ensure the password and username match.')
@@ -74,7 +72,6 @@ def submit_functionality(event = None):
 def open_sign_up(event = None):
     sign_up_menu(window1)
     window1.withdraw()
-   
 
 #creates window 
 window1.geometry('800x580')

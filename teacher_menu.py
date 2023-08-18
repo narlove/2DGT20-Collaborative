@@ -10,6 +10,7 @@ import os
 
 def build_teacher_window(rootWindow: tk.Tk):
     UserApp = ctk.CTkToplevel(rootWindow)
+    UserApp.protocol("WM_DELETE_WINDOW", lambda: quit())
     UserApp.geometry('800x580')
     UserApp.resizable(width=False, height=False)
 
@@ -18,6 +19,7 @@ def build_teacher_window(rootWindow: tk.Tk):
 
     background_image = tk.PhotoImage(file = background_image_location)
     graphicL = tk.Label(UserApp, image = background_image)
+    graphicL.image = background_image
     graphicL.pack()
 
     csv_file_path = os.path.join(script_directory, "teacher_absences.csv")
@@ -41,63 +43,81 @@ def build_teacher_window(rootWindow: tk.Tk):
         #errors to make sure data is correct
         if leavetype==("Absence type"):
             messagebox.showerror('An error occured', 'Please choose your absence type.')
+            return
         
+        if Startdate == '' or StartTime == '' or Enddate == '' or EndTime == '':
+            messagebox.showerror('An error occured', 'Ensure you enter all required values.')
+            return
+
         elif Enddate < Startdate: #makes it so that user cannot choose invalid dates
             messagebox.showerror('An error occured', 'You have chosen an end date before your starting date.')
+            return
+
         elif TeacherCode == "": #doesnt allow Name to be blank
             messagebox.showerror('An error occured', 'Please insert your credentials.')
+            return
+
         elif Enddate == Startdate:
             if EndTime <= StartTime: #if day is the same teacher cannot choose end time before starting time
                     messagebox.showerror('An error occured', 'You must choose an end time after your starting time.')
+                    return
             else:
                 with open(csv_file_path, mode="a", newline="") as f:
                     writer = csv.writer(f, delimiter=",")
                     writer.writerow([TeacherCode, Startdate, StartTime, Enddate, EndTime])
                     messagebox.showinfo('Success', 'Absence successfully submitted.')
         else: #finally writes down the information in a CSV file
-            with open("teacher absences.csv",mode="a", newline="") as f:
+            with open(csv_file_path,mode="a", newline="") as f:
                 writer = csv.writer(f, delimiter=",")
-                writer.writerow([TeacherCode, Startdate, StartTime, Enddate, EndTime])
+                writer.writerow([TeacherCode, StartTime, Startdate, EndTime, Enddate, "n/a"])
                 messagebox.showinfo('Success', 'Absence successfully submitted.')
+
+            TeacherCode = nameEntry.delete(0, tk.END)
+            # deleting doesnt return the placeholder text
+            Startdate = startDateEntry.delete(0, tk.END)
+            StartTime = startTimeEntry.set('Start Time')
+            Enddate = endDateEntry.delete(0, tk.END)
+            EndTime = endTimeEntry.set('End Time')
+            leavetype = combobox_var.set('Absence type')
 
     #return to main page
     def returnToMain():
         UserApp.destroy()
-        UserApp.deiconify
+        rootWindow.deiconify()
 
     def pick_date1(event):
         global cal1, date_window
 
-        date_window = Toplevel()
+        date_window = tk.Toplevel()
         date_window.grab_set()
         date_window.title('select start of leave')
         date_window.geometry('250x220+590+370')
-        cal1 = Calendar(date_window, selectmode="day", date_pattern="dd/mm/yy")
+        cal1 = Calendar(date_window, selectmode="day", date_pattern="dd/mm/yyyy")
         cal1.place(x=0, y=0)
-        submit_btn = Button(date_window, text="submit", command=grab_date1)
+        submit_btn = tk.Button(date_window, text="submit", command=grab_date1)
         submit_btn.place(x=100, y=190)
     
     #grab date1 command
     def grab_date1():
-        startDateEntry.delete(0, END)
+        startDateEntry.delete(0, tk.END)
         startDateEntry.insert(0, cal1.get_date())
         date_window.destroy() #destroys window
 
     def pick_date2(event):
         global cal2, date_window
 
-        date_window = Toplevel()
+        date_window = tk.Toplevel()
         date_window.grab_set()
         date_window.title('select end of leave')
         date_window.geometry('250x220+590+370')
-        cal2 = Calendar(date_window, selectmode="day", date_pattern="dd/mm/yy")
+        cal2 = Calendar(date_window, selectmode="day", date_pattern="dd/mm/yyyy")
         cal2.place(x = 0, y=0)
 
-        submit_btn = Button(date_window, text="submit", command=grab_date2)
+        submit_btn = tk.Button(date_window, text="submit", command=grab_date2)
         submit_btn.place(x=100, y=190)
 
     def grab_date2():
-        endDateEntry.delete(0, END)
+        endDateEntry.delete(0, tk.END)
         endDateEntry.insert(0, cal2.get_date())
         date_window.destroy()
 
@@ -112,13 +132,19 @@ def build_teacher_window(rootWindow: tk.Tk):
     endDateEntry.place(x=487, y=162)
     endDateEntry.bind("<1>", pick_date2)
 
+    start_time_values = ["08:00", "09:00", "10:00", "11:00", "12:00",
+                             "13:00", "14:00", "15:00", "16:00", "17:00"]
+
     startTime_var = ctk.StringVar(value="option 8")
-    startTimeEntry = ctk.CTkComboBox(UserApp, dropdown_fg_color="#f9f4f5", width=150, height=37, values=["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00"], variable=startTime_var)
+    startTimeEntry = ctk.CTkComboBox(UserApp, dropdown_fg_color="#f9f4f5", width=150, height=37, values=start_time_values, variable=startTime_var)
     startTime_var.set("Start Time")
     startTimeEntry.place(x=187, y=230)
 
+    end_time_values = ["08:00", "09:00", "10:00", "11:00", "12:00",
+                           "13:00", "14:00", "15:00", "16:00", "17:00"]
+
     endTime_var = ctk.StringVar(value="option 8")
-    endTimeEntry = ctk.CTkComboBox(UserApp, dropdown_fg_color="#f9f4f5",width=150, height=37, values=["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00"], variable=endTime_var)
+    endTimeEntry = ctk.CTkComboBox(UserApp, dropdown_fg_color="#f9f4f5",width=150, height=37, values=end_time_values, variable=endTime_var)
     endTime_var.set("End Time")
     endTimeEntry.place(x=487, y=230)
 
@@ -132,5 +158,3 @@ def build_teacher_window(rootWindow: tk.Tk):
 
     submitButton = ctk.CTkButton(UserApp, text="Submit", height=50, width=150, fg_color="#f9f4f5", text_color="black", hover_color="#e8e3e4", command=write_data)
     submitButton.place(x=586,y=500)
-
-    UserApp.mainloop()
