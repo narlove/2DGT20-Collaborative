@@ -1,14 +1,9 @@
 import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
 import customtkinter as customTkinter
 import json
 import os
-from admin_menu import build_admin_menu
-from teacher_menu import TeacherAbsenceTracker 
 import customtkinter as customTkinter
 from customtkinter import CTkToplevel
-import time
 
 #Sign up mnu
 def sign_up_menu(rootWindow=tk.Tk):

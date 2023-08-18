@@ -17,7 +17,7 @@ import json
 import sorting_algorithm
 
 file_dir = os.path.dirname(os.path.abspath(__file__))
-absencedata_path = os.path.join(file_dir, "absencedata.csv")
+absencedata_path = os.path.join(file_dir, "teacher_absences.csv")
 teacherlist_path = os.path.join(file_dir, "teacherlist.csv")
 records_path = os.path.join(file_dir, "records.csv")
 
@@ -30,7 +30,7 @@ with open(absencedata_path, 'a') as f, open(teacherlist_path, 'a') as g:
 # <FUNCTIONS>
 
 def edit_file(
-    options: dict[str, bool] = {"teacherlist.csv": False, "absencedata.csv": False},
+    options: dict[str, bool] = {"teacherlist.csv": False, "teacher_absences.csv": False},
     teacherTree: ttk.Treeview = None,
     absenceTree: ttk.Treeview = None,
 ):
@@ -41,9 +41,9 @@ def edit_file(
         options["teacherlist.csv"] = False
 
     try:
-        options["absencedata.csv"]
+        options["teacher_absences.csv"]
     except KeyError:
-        options["absencedata.csv"] = False
+        options["teacher_absences.csv"] = False
 
     for key, value in options.items():
         if value == True:
@@ -180,6 +180,7 @@ def build_manage_staff():
                 constructedSeconds = time.mktime(constructedTime)
             except ValueError:
                 messagebox.showerror('An error occured', 'Your absence data file is not correctly formatted. Please call an administrator to resolve the issue.')
+                quit()
 
             if constructedSeconds > currentTime:
                 toWrite.append(row)
@@ -193,8 +194,8 @@ def build_manage_staff():
         for row in recordsToWrite:
             recordsWriter.writerow(row)
 
-    os.remove(os.path.join(file_dir, f'absencedata.csv'))
-    os.rename(os.path.join(file_dir, f'tempabsencedata.csv'), os.path.join(file_dir, f'absencedata.csv'))
+    os.remove(os.path.join(file_dir, f'teacher_absences.csv'))
+    os.rename(os.path.join(file_dir, f'tempabsencedata.csv'), os.path.join(file_dir, f'teacher_absences.csv'))
 
     for item in absencesTree.get_children():
         absencesTree.delete(item)
@@ -261,6 +262,30 @@ def build_manage_staff():
             if selectedTeacher == '' or selectedTeacher == None:
                 return
 
+            # check if the subteacherscode is assigned to any other teacher
+
+            # HOW?!:
+            # get all teachers in absencetree
+            # if the teacher gotten is at the same index ['item'] = 0 as the one we are checking
+            # ignore it
+            # otherwise, check if the sub code we are attempting to set (subTeacherCode) belongs to anyone else
+
+            # check if this (teacherItem["values"][0]) is preexist as a teacher code in the absences tree
+
+            for items in absencesTree.get_children():
+                seralizedItem = absencesTree.item(items)
+
+                # check here that its not the same line
+                if seralizedItem['text'] == item['text']:
+                    continue
+
+                # then here should be whether it is preexisting
+                if seralizedItem['values'][5] == teacherItem["values"][0]:
+                    tempbool = messagebox.askokcancel('Are you sure you want to do this?', 'This subsitute is already assigned to another absence.')
+                    if tempbool == False:
+                        return
+                    break
+
             if item['values'][5] != 'n/a':
                 subTeacherCode = item['values'][5]
 
@@ -268,29 +293,6 @@ def build_manage_staff():
                     askOkBool = messagebox.askokcancel('Are you sure you want to do this?', 'You are current attempting to override the substitute previously assigned to this teacher. Are you sure you want to do this?')
                     if askOkBool == False:
                         return
-
-                # check if the subteacherscode is assigned to any other teacher
-
-                # HOW?!:
-                # get all teachers in absencetree
-                # if the teacher gotten is at the same index ['item'] = 0 as the one we are checking
-                # ignore it
-                # otherwise, check if the sub code we are attempting to set (subTeacherCode) belongs to anyone else
-
-                # check if this (teacherItem["values"][0]) is preexist as a teacher code in the absences tree
-
-                for items in absencesTree.get_children():
-                    seralizedItem = absencesTree.item(items)
-
-                    # check here that its not the same line
-                    if seralizedItem['text'] == item['text']:
-                        continue
-
-                    # then here should be whether it is preexisting
-                    if seralizedItem['values'][5] == teacherItem["values"][0]:
-                        tempbool = messagebox.askokcancel('Are you sure you want to do this?', 'This subsitute is already assigned to another absence.')
-                        if tempbool == False:
-                            return
 
                 # on absences tree, check for which teacher has this code
                 for teacherTreeItem in teachersTree.get_children():
@@ -316,7 +318,7 @@ def build_manage_staff():
             )
 
             edit_file(
-                {"teacherlist.csv": True, "absencedata.csv": True},
+                {"teacherlist.csv": True, "teacher_absences.csv": True},
                 teacherTree=teachersTree,
                 absenceTree=absencesTree,
             )
@@ -331,8 +333,11 @@ def build_manage_staff():
 
 def build_view_records(event=None):
     for label in main_area.winfo_children():
-        if type(label) == ttk.Label or type(label) == tk.Frame:
-            label.destroy()
+            if type(label) == ttk.Label or type(label) == tk.Frame or type(ttk.Treeview):
+                label.destroy()
+    for button in main_area.winfo_children():
+        if type(button) == ttk.Button or type(button) == tk.Frame:
+            button.destroy()
 
     treeviewGridDiv = tk.Frame(main_area)
     treeviewGridDiv.pack()
