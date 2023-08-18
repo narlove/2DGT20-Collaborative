@@ -7,7 +7,7 @@ import json
 import os
 
 from admin_menu import build_admin_menu
-from teacher_menu import TeacherAbsenceTracker
+from teacher_menu import build_teacher_window
 
 file_dir = os.path.dirname(os.path.abspath(__file__))
 desktop_path = os.path.join(file_dir, "Desktop.png")
@@ -70,11 +70,11 @@ def submit_functionality(event = None):
                 build_admin_menu(window1)
                 window1.withdraw()
             else:
-                teacherMenu = TeacherAbsenceTracker(rootWindow=window1)
-                teacherMenu.run()   
+                teacherMenu = build_teacher_window(rootWindow=window1)
+                #teacherMenu.run()   
 
                 window1.withdraw()
-                teacherMenu.window.deiconify()            
+                #teacherMenu.window.deiconify()            
 
         if foundUser == False or foundPass == False:
             messagebox.showerror('An error occured', 'Ensure the password and username match.')
