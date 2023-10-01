@@ -1,22 +1,4 @@
 {
-    "HUJ": {
-        "username": "joe.huck",
-        "password": "password1",
-        "name": "Joe Huck",
-        "isAdmin": false
-    },
-    "MORB": {
-        "username": "britt.morison",
-        "password": "password2",
-        "name": "Britt Morison",
-        "isAdmin": false
-    },
-    "ROM": {
-        "username": "mitchell.robinson",
-        "password": "password3",
-        "name": "Mitchell Robinson",
-        "isAdmin": true
-    },
     "ADM": {
         "username": "admin",
         "password": "admin",
